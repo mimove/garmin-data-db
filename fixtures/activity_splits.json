@@ -1,0 +1,7 @@
+{
+  "activityId": 12345678901,
+  "lapDTOs": [
+    {"lapIndex": 1, "distance": 1000.0, "duration": 295.0, "averageHR": 145.0, "averageSpeed": 3.39, "elevationGain": 5.0},
+    {"lapIndex": 2, "distance": 1000.0, "duration": 301.0, "averageHR": 152.0, "averageSpeed": 3.32, "elevationGain": 8.0}
+  ]
+}

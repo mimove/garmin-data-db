@@ -1,0 +1,11 @@
+[
+  {
+    "date": "2023-11-14",
+    "charged": 55,
+    "drained": 42,
+    "bodyBatteryValuesArray": [
+      [1700000000000, "MEASURED", 73, 1.0],
+      [1700000180000, "MEASURED", 72, 1.0]
+    ]
+  }
+]
