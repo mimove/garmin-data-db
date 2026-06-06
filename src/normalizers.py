@@ -66,7 +66,7 @@ def normalize_body_battery_intraday(payload: list | None, calendar_date: date) -
     rows = []
     for day in payload or []:
         for point in day.get("bodyBatteryValuesArray") or []:
-            ts, level = point[0], point[2]
+            ts, level = point[0], point[1]
             if level is not None:
                 rows.append({"calendar_date": calendar_date, "ts": _ts(ts), "level": level})
     return rows
