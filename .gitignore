@@ -5,3 +5,4 @@ __pycache__/
 venv/
 .garminconnect/
 .pytest_cache/
+fixtures/captured/
