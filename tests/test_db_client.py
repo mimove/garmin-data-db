@@ -99,3 +99,30 @@ def test_upsert_activity_and_splits(db, cur, mocker):
     sql = ev.call_args[0][1]
     assert "INSERT INTO activity_splits" in sql
     assert "ON CONFLICT (activity_id, split_index) DO UPDATE" in sql
+
+
+def test_get_synced_dates(db, cur):
+    cur.fetchall.return_value = [(date(2023, 11, 14),), (date(2023, 11, 13),)]
+    result = db.get_synced_dates()
+    assert result == {date(2023, 11, 14), date(2023, 11, 13)}
+    assert "SELECT calendar_date FROM sync_log" in cur.execute.call_args[0][0]
+
+
+def test_mark_synced(db, cur):
+    db.mark_synced(DAY)
+    sql, params = cur.execute.call_args[0]
+    assert "INSERT INTO sync_log" in sql
+    assert "ON CONFLICT (calendar_date) DO NOTHING" in sql
+    assert params == (DAY,)
+    db._conn.commit.assert_called_once()
+
+
+def test_get_latest_activity_start(db, cur):
+    cur.fetchone.return_value = (TS,)
+    assert db.get_latest_activity_start() == TS
+    assert "SELECT max(start_time) FROM activities" in cur.execute.call_args[0][0]
+
+
+def test_get_latest_activity_start_empty_table(db, cur):
+    cur.fetchone.return_value = (None,)
+    assert db.get_latest_activity_start() is None

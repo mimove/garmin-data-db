@@ -79,3 +79,22 @@ class GarminDB:
                 cur, sql, [tuple(r.get(c) for c in cols) for r in rows]
             )
         self._conn.commit()
+
+    def get_synced_dates(self) -> set:
+        with self._conn.cursor() as cur:
+            cur.execute("SELECT calendar_date FROM sync_log")
+            return {r[0] for r in cur.fetchall()}
+
+    def mark_synced(self, calendar_date) -> None:
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO sync_log (calendar_date) VALUES (%s) "
+                "ON CONFLICT (calendar_date) DO NOTHING",
+                (calendar_date,),
+            )
+        self._conn.commit()
+
+    def get_latest_activity_start(self):
+        with self._conn.cursor() as cur:
+            cur.execute("SELECT max(start_time) FROM activities")
+            return cur.fetchone()[0]
