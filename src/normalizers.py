@@ -100,3 +100,34 @@ def normalize_steps_intraday(payload: list | None, calendar_date: date) -> list[
         ts = datetime.strptime(start, "%Y-%m-%dT%H:%M:%S.%f").replace(tzinfo=timezone.utc)
         rows.append({"calendar_date": calendar_date, "ts": ts, "steps": steps})
     return rows
+
+
+def normalize_hrv(payload: dict | None, calendar_date: date) -> dict | None:
+    summary = (payload or {}).get("hrvSummary") or {}
+    if not summary:
+        return None
+    return {
+        "calendar_date": calendar_date,
+        "last_night_avg_ms": summary.get("lastNightAvg"),
+        "weekly_avg_ms": summary.get("weeklyAvg"),
+        "status": summary.get("status"),
+        "raw": payload,
+    }
+
+
+def normalize_training_status(payload: dict | None, calendar_date: date) -> dict | None:
+    if not payload:
+        return None
+    vo2 = (payload.get("mostRecentVO2Max") or {}).get("generic") or {}
+    status_block = (payload.get("mostRecentTrainingStatus") or {}).get("latestTrainingStatusData") or {}
+    device_data = next(iter(status_block.values()), {})
+    load = device_data.get("acuteTrainingLoadDTO") or {}
+    if not vo2 and not device_data:
+        return None
+    return {
+        "calendar_date": calendar_date,
+        "vo2max": vo2.get("vo2MaxValue"),
+        "training_load_7d": load.get("dailyTrainingLoadAcute"),
+        "status": device_data.get("trainingStatusFeedbackPhrase"),
+        "raw": payload,
+    }

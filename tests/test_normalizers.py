@@ -147,3 +147,45 @@ def test_normalize_steps_intraday_empty():
     from src.normalizers import normalize_steps_intraday
     assert normalize_steps_intraday(None, DAY) == []
     assert normalize_steps_intraday([], DAY) == []
+
+
+# --- hrv ---
+
+def test_normalize_hrv():
+    from src.normalizers import normalize_hrv
+    payload = load_fixture("hrv.json")
+    row = normalize_hrv(payload, DAY)
+    assert row == {
+        "calendar_date": DAY,
+        "last_night_avg_ms": 58,
+        "weekly_avg_ms": 55,
+        "status": "BALANCED",
+        "raw": payload,
+    }
+
+
+def test_normalize_hrv_no_data_returns_none():
+    from src.normalizers import normalize_hrv
+    assert normalize_hrv(None, DAY) is None
+    assert normalize_hrv({}, DAY) is None
+
+
+# --- training_status ---
+
+def test_normalize_training_status():
+    from src.normalizers import normalize_training_status
+    payload = load_fixture("training_status.json")
+    row = normalize_training_status(payload, DAY)
+    assert row == {
+        "calendar_date": DAY,
+        "vo2max": 54.0,
+        "training_load_7d": 612.0,
+        "status": "PRODUCTIVE_1",
+        "raw": payload,
+    }
+
+
+def test_normalize_training_status_no_data_returns_none():
+    from src.normalizers import normalize_training_status
+    assert normalize_training_status(None, DAY) is None
+    assert normalize_training_status({}, DAY) is None
