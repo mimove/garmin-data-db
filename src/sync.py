@@ -62,3 +62,31 @@ def sync_day(client, db, day: date) -> bool:
             log.error("%s failed for %s: %s", fetch_name, day, exc)
             ok = False
     return ok
+
+
+def sync_wellness(client, db, today: date, backfill_start: date, max_days: int) -> None:
+    dates = plan_dates(db.get_synced_dates(), today, backfill_start, max_days)
+    log.info("Syncing %d wellness days (%s .. %s)", len(dates), dates[0], dates[-1])
+    for day in dates:
+        ok = sync_day(client, db, day)
+        if ok and day != today:
+            db.mark_synced(day)
+
+
+def sync_activities(client, db, batch_size: int = 50) -> None:
+    latest = db.get_latest_activity_start()
+    start = 0
+    while True:
+        batch = client.get_activities(start, batch_size)
+        if not batch:
+            return
+        for payload in batch:
+            row = normalizers.normalize_activity(payload)
+            if latest and row["start_time"] <= latest:
+                return  # batches come newest-first; everything older is already stored
+            db.upsert_activity(row)
+            splits_payload = client.get_activity_splits(row["activity_id"])
+            db.upsert_activity_splits(
+                normalizers.normalize_activity_splits(splits_payload, row["activity_id"])
+            )
+        start += batch_size

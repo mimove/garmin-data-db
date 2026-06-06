@@ -97,3 +97,56 @@ def test_sync_day_429_propagates(client, db):
     client.get_sleep.side_effect = GarminConnectTooManyRequestsError("429")
     with pytest.raises(GarminConnectTooManyRequestsError):
         sync_day(client, db, TODAY)
+
+
+# --- sync_wellness ---
+
+def test_sync_wellness_marks_past_days_but_not_today(client, db, mocker):
+    from src import sync
+    db.get_synced_dates.return_value = set()
+    mocker.patch.object(sync, "sync_day", return_value=True)
+    sync.sync_wellness(client, db, today=TODAY, backfill_start=date(2023, 11, 12), max_days=10)
+    marked = [c[0][0] for c in db.mark_synced.call_args_list]
+    assert marked == [date(2023, 11, 13), date(2023, 11, 12)]  # today NOT marked
+
+
+def test_sync_wellness_does_not_mark_failed_days(client, db, mocker):
+    from src import sync
+    db.get_synced_dates.return_value = set()
+    mocker.patch.object(sync, "sync_day", side_effect=[True, False, True])
+    sync.sync_wellness(client, db, today=TODAY, backfill_start=date(2023, 11, 12), max_days=10)
+    marked = [c[0][0] for c in db.mark_synced.call_args_list]
+    assert marked == [date(2023, 11, 12)]  # today not marked; failed 13th not marked
+
+
+# --- sync_activities ---
+
+def test_sync_activities_upserts_new_activities_and_splits(client, db):
+    from src.sync import sync_activities
+    from tests.conftest import load_fixture
+    db.get_latest_activity_start.return_value = None
+    client.get_activities.side_effect = [load_fixture("activities.json"), []]
+    client.get_activity_splits.return_value = load_fixture("activity_splits.json")
+    sync_activities(client, db)
+    assert db.upsert_activity.call_args[0][0]["activity_id"] == 12345678901
+    client.get_activity_splits.assert_called_once_with(12345678901)
+    assert len(db.upsert_activity_splits.call_args[0][0]) == 2
+
+
+def test_sync_activities_stops_at_known_activity(client, db):
+    from datetime import datetime, timezone
+    from src.sync import sync_activities
+    from tests.conftest import load_fixture
+    # latest stored activity is NEWER than the fetched one -> nothing upserted
+    db.get_latest_activity_start.return_value = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    client.get_activities.return_value = load_fixture("activities.json")
+    sync_activities(client, db)
+    db.upsert_activity.assert_not_called()
+
+
+def test_sync_activities_empty_account(client, db):
+    from src.sync import sync_activities
+    db.get_latest_activity_start.return_value = None
+    client.get_activities.return_value = []
+    sync_activities(client, db)
+    db.upsert_activity.assert_not_called()
