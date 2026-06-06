@@ -189,3 +189,56 @@ def test_normalize_training_status_no_data_returns_none():
     from src.normalizers import normalize_training_status
     assert normalize_training_status(None, DAY) is None
     assert normalize_training_status({}, DAY) is None
+
+
+# --- activities ---
+
+def test_normalize_activity():
+    from src.normalizers import normalize_activity
+    payload = load_fixture("activities.json")[0]
+    row = normalize_activity(payload)
+    assert row["activity_id"] == 12345678901
+    assert row["type"] == "running"
+    assert row["name"] == "Valencia Running"
+    assert row["start_time"] == datetime(2023, 11, 14, 7, 30, tzinfo=timezone.utc)
+    assert row["distance_m"] == 10000.0
+    assert row["duration_sec"] == 3000.0
+    assert row["avg_hr"] == 150.0
+    assert row["max_hr"] == 175.0
+    assert row["avg_pace_s_per_km"] == 1000 / 3.333
+    assert row["calories"] == 600.0
+    assert row["vo2max"] == 54.0
+    assert row["aerobic_training_effect"] == 3.5
+    assert row["anaerobic_training_effect"] == 1.2
+    assert row["raw"] == payload
+
+
+def test_normalize_activity_zero_speed_gives_null_pace():
+    from src.normalizers import normalize_activity
+    payload = load_fixture("activities.json")[0] | {"averageSpeed": 0}
+    assert normalize_activity(payload)["avg_pace_s_per_km"] is None
+
+
+# --- activity_splits ---
+
+def test_normalize_activity_splits():
+    from src.normalizers import normalize_activity_splits
+    payload = load_fixture("activity_splits.json")
+    rows = normalize_activity_splits(payload, 12345678901)
+    assert len(rows) == 2
+    assert rows[0] == {
+        "activity_id": 12345678901,
+        "split_index": 0,
+        "distance_m": 1000.0,
+        "duration_sec": 295.0,
+        "avg_hr": 145.0,
+        "avg_pace_s_per_km": 1000 / 3.39,
+        "elevation_gain_m": 5.0,
+    }
+    assert rows[1]["split_index"] == 1
+
+
+def test_normalize_activity_splits_empty():
+    from src.normalizers import normalize_activity_splits
+    assert normalize_activity_splits(None, 1) == []
+    assert normalize_activity_splits({}, 1) == []

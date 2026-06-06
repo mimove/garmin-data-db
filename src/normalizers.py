@@ -131,3 +131,39 @@ def normalize_training_status(payload: dict | None, calendar_date: date) -> dict
         "status": device_data.get("trainingStatusFeedbackPhrase"),
         "raw": payload,
     }
+
+
+def normalize_activity(payload: dict) -> dict:
+    speed = payload.get("averageSpeed")
+    return {
+        "activity_id": payload["activityId"],
+        "type": (payload.get("activityType") or {}).get("typeKey"),
+        "name": payload.get("activityName"),
+        "start_time": datetime.strptime(payload["startTimeGMT"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc),
+        "distance_m": payload.get("distance"),
+        "duration_sec": payload.get("duration"),
+        "avg_hr": payload.get("averageHR"),
+        "max_hr": payload.get("maxHR"),
+        "avg_pace_s_per_km": 1000 / speed if speed else None,
+        "calories": payload.get("calories"),
+        "vo2max": payload.get("vO2MaxValue"),
+        "aerobic_training_effect": payload.get("aerobicTrainingEffect"),
+        "anaerobic_training_effect": payload.get("anaerobicTrainingEffect"),
+        "raw": payload,
+    }
+
+
+def normalize_activity_splits(payload: dict | None, activity_id: int) -> list[dict]:
+    rows = []
+    for i, lap in enumerate((payload or {}).get("lapDTOs") or []):
+        speed = lap.get("averageSpeed")
+        rows.append({
+            "activity_id": activity_id,
+            "split_index": i,
+            "distance_m": lap.get("distance"),
+            "duration_sec": lap.get("duration"),
+            "avg_hr": lap.get("averageHR"),
+            "avg_pace_s_per_km": 1000 / speed if speed else None,
+            "elevation_gain_m": lap.get("elevationGain"),
+        })
+    return rows
