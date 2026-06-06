@@ -1,0 +1,9 @@
+{
+  "calendarDate": "2023-11-14",
+  "restingHeartRate": 47,
+  "heartRateValues": [
+    [1700000000000, 62],
+    [1700000120000, 64],
+    [1700000240000, null]
+  ]
+}

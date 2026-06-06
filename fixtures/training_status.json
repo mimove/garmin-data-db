@@ -1,0 +1,12 @@
+{
+  "mostRecentVO2Max": {"generic": {"vo2MaxValue": 54.0}},
+  "mostRecentTrainingStatus": {
+    "latestTrainingStatusData": {
+      "3472179884": {
+        "trainingStatus": 4,
+        "trainingStatusFeedbackPhrase": "PRODUCTIVE_1",
+        "acuteTrainingLoadDTO": {"dailyTrainingLoadAcute": 612.0}
+      }
+    }
+  }
+}

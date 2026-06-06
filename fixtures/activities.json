@@ -1,0 +1,17 @@
+[
+  {
+    "activityId": 12345678901,
+    "activityName": "Valencia Running",
+    "activityType": {"typeKey": "running"},
+    "startTimeGMT": "2023-11-14 07:30:00",
+    "distance": 10000.0,
+    "duration": 3000.0,
+    "averageHR": 150.0,
+    "maxHR": 175.0,
+    "averageSpeed": 3.333,
+    "calories": 600.0,
+    "vO2MaxValue": 54.0,
+    "aerobicTrainingEffect": 3.5,
+    "anaerobicTrainingEffect": 1.2
+  }
+]

@@ -1,0 +1,15 @@
+{
+  "dailySleepDTO": {
+    "calendarDate": "2023-11-14",
+    "sleepTimeSeconds": 27000,
+    "deepSleepSeconds": 5400,
+    "lightSleepSeconds": 14400,
+    "remSleepSeconds": 5400,
+    "awakeSleepSeconds": 1800,
+    "averageSpO2Value": 95.0,
+    "averageRespirationValue": 14.5,
+    "sleepStartTimestampGMT": 1699998000000,
+    "sleepEndTimestampGMT": 1700025000000,
+    "sleepScores": {"overall": {"value": 82}}
+  }
+}

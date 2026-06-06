@@ -1,0 +1,9 @@
+{
+  "calendarDate": "2023-11-14",
+  "averageSpO2": 95.0,
+  "lowestSpO2": 90,
+  "spO2HourlyAverages": [
+    [1700000000000, 95],
+    [1700003600000, 94]
+  ]
+}
