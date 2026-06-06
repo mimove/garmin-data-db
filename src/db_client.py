@@ -32,9 +32,13 @@ class GarminDB:
             psycopg2.extras.Json(v) if isinstance(v, (dict, list)) else v
             for v in row.values()
         ]
-        with self._conn.cursor() as cur:
-            cur.execute(sql, params)
-        self._conn.commit()
+        try:
+            with self._conn.cursor() as cur:
+                cur.execute(sql, params)
+            self._conn.commit()
+        except Exception:
+            self._conn.rollback()
+            raise
 
     def upsert_daily_summary(self, row: dict) -> None:
         self._upsert("daily_summary", ["calendar_date"], row)
@@ -54,15 +58,20 @@ class GarminDB:
     def upsert_intraday(self, table: str, value_cols: list[str], rows: list[dict]) -> None:
         if not rows:
             return
+        deduped = list({(r["calendar_date"], r["ts"]): r for r in rows}.values())
         cols = ["calendar_date", "ts"] + value_cols
         update = ", ".join(f"{c} = EXCLUDED.{c}" for c in value_cols)
         sql = (
             f"INSERT INTO {table} ({', '.join(cols)}) VALUES %s "
             f"ON CONFLICT (calendar_date, ts) DO UPDATE SET {update}"
         )
-        with self._conn.cursor() as cur:
-            psycopg2.extras.execute_values(cur, sql, [tuple(r[c] for c in cols) for r in rows])
-        self._conn.commit()
+        try:
+            with self._conn.cursor() as cur:
+                psycopg2.extras.execute_values(cur, sql, [tuple(r[c] for c in cols) for r in deduped])
+            self._conn.commit()
+        except Exception:
+            self._conn.rollback()
+            raise
 
     def upsert_activity_splits(self, rows: list[dict]) -> None:
         if not rows:
@@ -74,11 +83,15 @@ class GarminDB:
             f"INSERT INTO activity_splits ({', '.join(cols)}) VALUES %s "
             f"ON CONFLICT (activity_id, split_index) DO UPDATE SET {update}"
         )
-        with self._conn.cursor() as cur:
-            psycopg2.extras.execute_values(
-                cur, sql, [tuple(r.get(c) for c in cols) for r in rows]
-            )
-        self._conn.commit()
+        try:
+            with self._conn.cursor() as cur:
+                psycopg2.extras.execute_values(
+                    cur, sql, [tuple(r.get(c) for c in cols) for r in rows]
+                )
+            self._conn.commit()
+        except Exception:
+            self._conn.rollback()
+            raise
 
     def get_synced_dates(self) -> set:
         with self._conn.cursor() as cur:
@@ -86,13 +99,17 @@ class GarminDB:
             return {r[0] for r in cur.fetchall()}
 
     def mark_synced(self, calendar_date) -> None:
-        with self._conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO sync_log (calendar_date) VALUES (%s) "
-                "ON CONFLICT (calendar_date) DO NOTHING",
-                (calendar_date,),
-            )
-        self._conn.commit()
+        try:
+            with self._conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO sync_log (calendar_date) VALUES (%s) "
+                    "ON CONFLICT (calendar_date) DO NOTHING",
+                    (calendar_date,),
+                )
+            self._conn.commit()
+        except Exception:
+            self._conn.rollback()
+            raise
 
     def get_activity_ids(self) -> set:
         with self._conn.cursor() as cur:
