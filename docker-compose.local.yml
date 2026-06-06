@@ -1,0 +1,50 @@
+# Local stand-in for the Raspberry Pi: Postgres + k3s (lightweight Kubernetes).
+# MicroK8s can't run inside a container (snap/systemd); k3s is the standard substitute.
+#
+#   docker compose -f docker-compose.local.yml up -d
+#   export KUBECONFIG=$PWD/k3s-output/kubeconfig.yaml
+#   kubectl get nodes
+#
+# Pods inside k3s reach Postgres via its static IP (172.28.0.10) — cluster DNS
+# cannot resolve compose service names, so the local secret uses the IP.
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: garmin
+      POSTGRES_USER: garmin
+      POSTGRES_PASSWORD: garmin
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      garmin-net:
+        ipv4_address: 172.28.0.10
+
+  k3s:
+    image: rancher/k3s:v1.31.4-k3s1
+    command: server --disable traefik
+    privileged: true
+    environment:
+      K3S_KUBECONFIG_OUTPUT: /output/kubeconfig.yaml
+      K3S_KUBECONFIG_MODE: "666"
+    ports:
+      - "6443:6443"
+    volumes:
+      - ./k3s-output:/output
+      - k3s-data:/var/lib/rancher/k3s
+    networks:
+      garmin-net:
+        ipv4_address: 172.28.0.20
+
+volumes:
+  pgdata:
+  k3s-data:
+
+networks:
+  garmin-net:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24

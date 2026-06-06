@@ -7,3 +7,7 @@ venv/
 .garminconnect/
 .pytest_cache/
 fixtures/captured/
+k3s-output/
+k8s/secret.local.yaml
+k8s/secret.yaml
+*.vscode**
