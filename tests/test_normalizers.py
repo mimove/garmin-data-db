@@ -57,3 +57,48 @@ def test_normalize_sleep_no_data_returns_none():
     assert normalize_sleep(None, DAY) is None
     assert normalize_sleep({}, DAY) is None
     assert normalize_sleep({"dailySleepDTO": {"sleepTimeSeconds": 0}}, DAY) is None
+
+
+# --- hr_intraday ---
+
+def test_normalize_hr_intraday():
+    from src.normalizers import normalize_hr_intraday
+    rows = normalize_hr_intraday(load_fixture("heart_rate.json"), DAY)
+    assert rows == [
+        {"calendar_date": DAY, "ts": datetime.fromtimestamp(1700000000, tz=timezone.utc), "bpm": 62},
+        {"calendar_date": DAY, "ts": datetime.fromtimestamp(1700000120, tz=timezone.utc), "bpm": 64},
+    ]  # null bpm point dropped
+
+
+def test_normalize_hr_intraday_empty():
+    from src.normalizers import normalize_hr_intraday
+    assert normalize_hr_intraday(None, DAY) == []
+    assert normalize_hr_intraday({}, DAY) == []
+
+
+# --- stress_intraday ---
+
+def test_normalize_stress_intraday_drops_negative_levels():
+    from src.normalizers import normalize_stress_intraday
+    rows = normalize_stress_intraday(load_fixture("stress.json"), DAY)
+    assert rows == [
+        {"calendar_date": DAY, "ts": datetime.fromtimestamp(1700000000, tz=timezone.utc), "stress_level": 25},
+        {"calendar_date": DAY, "ts": datetime.fromtimestamp(1700000360, tz=timezone.utc), "stress_level": 31},
+    ]  # -1 (off-wrist) dropped
+
+
+# --- body_battery_intraday ---
+
+def test_normalize_body_battery_intraday():
+    from src.normalizers import normalize_body_battery_intraday
+    rows = normalize_body_battery_intraday(load_fixture("body_battery.json"), DAY)
+    assert rows == [
+        {"calendar_date": DAY, "ts": datetime.fromtimestamp(1700000000, tz=timezone.utc), "level": 73},
+        {"calendar_date": DAY, "ts": datetime.fromtimestamp(1700000180, tz=timezone.utc), "level": 72},
+    ]
+
+
+def test_normalize_body_battery_intraday_empty():
+    from src.normalizers import normalize_body_battery_intraday
+    assert normalize_body_battery_intraday(None, DAY) == []
+    assert normalize_body_battery_intraday([], DAY) == []

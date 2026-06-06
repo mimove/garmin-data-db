@@ -42,3 +42,31 @@ def normalize_sleep(payload: dict | None, calendar_date: date) -> dict | None:
         "sleep_end": _ts(dto["sleepEndTimestampGMT"]) if dto.get("sleepEndTimestampGMT") else None,
         "raw": payload,
     }
+
+
+def normalize_hr_intraday(payload: dict | None, calendar_date: date) -> list[dict]:
+    values = (payload or {}).get("heartRateValues") or []
+    return [
+        {"calendar_date": calendar_date, "ts": _ts(ts), "bpm": bpm}
+        for ts, bpm in values
+        if bpm is not None
+    ]
+
+
+def normalize_stress_intraday(payload: dict | None, calendar_date: date) -> list[dict]:
+    values = (payload or {}).get("stressValuesArray") or []
+    return [
+        {"calendar_date": calendar_date, "ts": _ts(ts), "stress_level": level}
+        for ts, level in values
+        if level is not None and level >= 0
+    ]
+
+
+def normalize_body_battery_intraday(payload: list | None, calendar_date: date) -> list[dict]:
+    rows = []
+    for day in payload or []:
+        for point in day.get("bodyBatteryValuesArray") or []:
+            ts, level = point[0], point[2]
+            if level is not None:
+                rows.append({"calendar_date": calendar_date, "ts": _ts(ts), "level": level})
+    return rows
