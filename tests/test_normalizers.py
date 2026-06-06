@@ -102,3 +102,48 @@ def test_normalize_body_battery_intraday_empty():
     from src.normalizers import normalize_body_battery_intraday
     assert normalize_body_battery_intraday(None, DAY) == []
     assert normalize_body_battery_intraday([], DAY) == []
+
+
+# --- respiration_intraday ---
+
+def test_normalize_respiration_intraday_drops_negatives():
+    from src.normalizers import normalize_respiration_intraday
+    rows = normalize_respiration_intraday(load_fixture("respiration.json"), DAY)
+    assert rows == [
+        {"calendar_date": DAY, "ts": datetime.fromtimestamp(1700000000, tz=timezone.utc), "breaths_per_min": 14.0},
+        {"calendar_date": DAY, "ts": datetime.fromtimestamp(1700000240, tz=timezone.utc), "breaths_per_min": 15.0},
+    ]
+
+
+# --- spo2_intraday ---
+
+def test_normalize_spo2_intraday():
+    from src.normalizers import normalize_spo2_intraday
+    rows = normalize_spo2_intraday(load_fixture("spo2.json"), DAY)
+    assert rows == [
+        {"calendar_date": DAY, "ts": datetime.fromtimestamp(1700000000, tz=timezone.utc), "spo2_pct": 95},
+        {"calendar_date": DAY, "ts": datetime.fromtimestamp(1700003600, tz=timezone.utc), "spo2_pct": 94},
+    ]
+
+
+def test_normalize_spo2_intraday_empty():
+    from src.normalizers import normalize_spo2_intraday
+    assert normalize_spo2_intraday(None, DAY) == []
+    assert normalize_spo2_intraday({}, DAY) == []
+
+
+# --- steps_intraday ---
+
+def test_normalize_steps_intraday():
+    from src.normalizers import normalize_steps_intraday
+    rows = normalize_steps_intraday(load_fixture("steps.json"), DAY)
+    assert rows == [
+        {"calendar_date": DAY, "ts": datetime(2023, 11, 14, 0, 0, tzinfo=timezone.utc), "steps": 0},
+        {"calendar_date": DAY, "ts": datetime(2023, 11, 14, 8, 0, tzinfo=timezone.utc), "steps": 420},
+    ]
+
+
+def test_normalize_steps_intraday_empty():
+    from src.normalizers import normalize_steps_intraday
+    assert normalize_steps_intraday(None, DAY) == []
+    assert normalize_steps_intraday([], DAY) == []

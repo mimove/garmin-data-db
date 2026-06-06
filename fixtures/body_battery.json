@@ -5,7 +5,8 @@
     "drained": 42,
     "bodyBatteryValuesArray": [
       [1700000000000, "MEASURED", 73, 1.0],
-      [1700000180000, "MEASURED", 72, 1.0]
+      [1700000180000, "MEASURED", 72, 1.0],
+      [1700000360000, "MEASURED", null, 1.0]
     ]
   }
 ]

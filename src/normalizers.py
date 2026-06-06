@@ -70,3 +70,33 @@ def normalize_body_battery_intraday(payload: list | None, calendar_date: date) -
             if level is not None:
                 rows.append({"calendar_date": calendar_date, "ts": _ts(ts), "level": level})
     return rows
+
+
+def normalize_respiration_intraday(payload: dict | None, calendar_date: date) -> list[dict]:
+    values = (payload or {}).get("respirationValuesArray") or []
+    return [
+        {"calendar_date": calendar_date, "ts": _ts(ts), "breaths_per_min": breaths}
+        for ts, breaths in values
+        if breaths is not None and breaths >= 0
+    ]
+
+
+def normalize_spo2_intraday(payload: dict | None, calendar_date: date) -> list[dict]:
+    values = (payload or {}).get("spO2HourlyAverages") or []
+    return [
+        {"calendar_date": calendar_date, "ts": _ts(ts), "spo2_pct": pct}
+        for ts, pct in values
+        if pct is not None
+    ]
+
+
+def normalize_steps_intraday(payload: list | None, calendar_date: date) -> list[dict]:
+    rows = []
+    for bucket in payload or []:
+        start = bucket.get("startGMT")
+        steps = bucket.get("steps")
+        if start is None or steps is None:
+            continue
+        ts = datetime.strptime(start, "%Y-%m-%dT%H:%M:%S.%f").replace(tzinfo=timezone.utc)
+        rows.append({"calendar_date": calendar_date, "ts": ts, "steps": steps})
+    return rows
