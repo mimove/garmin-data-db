@@ -45,7 +45,7 @@ def run() -> None:
 
     try:
         sync_wellness(client, db, today=today, backfill_start=backfill_start, max_days=max_days)
-        sync_activities(client, db)
+        sync_activities(client, db, backfill_start=backfill_start)
     except GarminConnectTooManyRequestsError:
         log.error("Aborted by rate limiting — will resume on next run")
         sys.exit(1)

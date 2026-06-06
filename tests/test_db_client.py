@@ -117,12 +117,12 @@ def test_mark_synced(db, cur):
     db._conn.commit.assert_called_once()
 
 
-def test_get_latest_activity_start(db, cur):
-    cur.fetchone.return_value = (TS,)
-    assert db.get_latest_activity_start() == TS
-    assert "SELECT max(start_time) FROM activities" in cur.execute.call_args[0][0]
+def test_get_activity_ids(db, cur):
+    cur.fetchall.return_value = [(111,), (222,)]
+    assert db.get_activity_ids() == {111, 222}
+    assert "SELECT activity_id FROM activities" in cur.execute.call_args[0][0]
 
 
-def test_get_latest_activity_start_empty_table(db, cur):
-    cur.fetchone.return_value = (None,)
-    assert db.get_latest_activity_start() is None
+def test_get_activity_ids_empty_table(db, cur):
+    cur.fetchall.return_value = []
+    assert db.get_activity_ids() == set()

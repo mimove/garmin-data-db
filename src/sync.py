@@ -73,8 +73,8 @@ def sync_wellness(client, db, today: date, backfill_start: date, max_days: int) 
             db.mark_synced(day)
 
 
-def sync_activities(client, db, batch_size: int = 50) -> None:
-    latest = db.get_latest_activity_start()
+def sync_activities(client, db, backfill_start: date, batch_size: int = 50) -> None:
+    known = db.get_activity_ids()
     start = 0
     while True:
         batch = client.get_activities(start, batch_size)
@@ -82,8 +82,10 @@ def sync_activities(client, db, batch_size: int = 50) -> None:
             return
         for payload in batch:
             row = normalizers.normalize_activity(payload)
-            if latest and row["start_time"] <= latest:
-                return  # batches come newest-first; everything older is already stored
+            if row["start_time"].date() < backfill_start:
+                return  # batches come newest-first; rest is outside the window
+            if row["activity_id"] in known:
+                continue  # already stored; splits were synced with it
             db.upsert_activity(row)
             splits_payload = client.get_activity_splits(row["activity_id"])
             db.upsert_activity_splits(

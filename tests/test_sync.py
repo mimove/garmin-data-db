@@ -124,29 +124,40 @@ def test_sync_wellness_does_not_mark_failed_days(client, db, mocker):
 def test_sync_activities_upserts_new_activities_and_splits(client, db):
     from src.sync import sync_activities
     from tests.conftest import load_fixture
-    db.get_latest_activity_start.return_value = None
+    db.get_activity_ids.return_value = set()
     client.get_activities.side_effect = [load_fixture("activities.json"), []]
     client.get_activity_splits.return_value = load_fixture("activity_splits.json")
-    sync_activities(client, db)
+    sync_activities(client, db, backfill_start=date(2023, 1, 1))
     assert db.upsert_activity.call_args[0][0]["activity_id"] == 12345678901
     client.get_activity_splits.assert_called_once_with(12345678901)
     assert len(db.upsert_activity_splits.call_args[0][0]) == 2
 
 
-def test_sync_activities_stops_at_known_activity(client, db):
-    from datetime import datetime, timezone
+def test_sync_activities_skips_known_ids_but_continues(client, db):
     from src.sync import sync_activities
     from tests.conftest import load_fixture
-    # latest stored activity is NEWER than the fetched one -> nothing upserted
-    db.get_latest_activity_start.return_value = datetime(2024, 1, 1, tzinfo=timezone.utc)
-    client.get_activities.return_value = load_fixture("activities.json")
-    sync_activities(client, db)
+    db.get_activity_ids.return_value = {12345678901}
+    client.get_activities.side_effect = [load_fixture("activities.json"), []]
+    sync_activities(client, db, backfill_start=date(2023, 1, 1))
     db.upsert_activity.assert_not_called()
+    client.get_activity_splits.assert_not_called()
+    assert client.get_activities.call_count == 2  # kept paginating past known activity
+
+
+def test_sync_activities_stops_at_backfill_start(client, db):
+    from src.sync import sync_activities
+    from tests.conftest import load_fixture
+    db.get_activity_ids.return_value = set()
+    client.get_activities.return_value = load_fixture("activities.json")
+    # fixture activity is 2023-11-14; window starts after it -> stop, nothing upserted
+    sync_activities(client, db, backfill_start=date(2024, 1, 1))
+    db.upsert_activity.assert_not_called()
+    assert client.get_activities.call_count == 1  # early return, no second page
 
 
 def test_sync_activities_empty_account(client, db):
     from src.sync import sync_activities
-    db.get_latest_activity_start.return_value = None
+    db.get_activity_ids.return_value = set()
     client.get_activities.return_value = []
-    sync_activities(client, db)
+    sync_activities(client, db, backfill_start=date(2023, 1, 1))
     db.upsert_activity.assert_not_called()

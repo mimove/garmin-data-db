@@ -94,7 +94,7 @@ class GarminDB:
             )
         self._conn.commit()
 
-    def get_latest_activity_start(self):
+    def get_activity_ids(self) -> set:
         with self._conn.cursor() as cur:
-            cur.execute("SELECT max(start_time) FROM activities")
-            return cur.fetchone()[0]
+            cur.execute("SELECT activity_id FROM activities")
+            return {r[0] for r in cur.fetchall()}
