@@ -126,3 +126,36 @@ def test_get_activity_ids(db, cur):
 def test_get_activity_ids_empty_table(db, cur):
     cur.fetchall.return_value = []
     assert db.get_activity_ids() == set()
+
+
+def test_upsert_intraday_dedupes_conflicting_rows(db, cur, mocker):
+    ev = mocker.patch("src.db_client.psycopg2.extras.execute_values")
+    rows = [
+        {"calendar_date": DAY, "ts": TS, "bpm": 60},
+        {"calendar_date": DAY, "ts": TS, "bpm": 62},  # duplicate key — last wins
+    ]
+    db.upsert_intraday("hr_intraday", ["bpm"], rows)
+    values = ev.call_args[0][2]
+    assert values == [(DAY, TS, 62)]
+
+
+def test_upsert_rolls_back_on_error(db, cur):
+    cur.execute.side_effect = RuntimeError("boom")
+    with pytest.raises(RuntimeError):
+        db.upsert_daily_summary({"calendar_date": DAY, "steps": 1})
+    db._conn.rollback.assert_called_once()
+    db._conn.commit.assert_not_called()
+
+
+def test_upsert_intraday_rolls_back_on_error(db, cur, mocker):
+    mocker.patch("src.db_client.psycopg2.extras.execute_values", side_effect=RuntimeError("boom"))
+    with pytest.raises(RuntimeError):
+        db.upsert_intraday("hr_intraday", ["bpm"], [{"calendar_date": DAY, "ts": TS, "bpm": 60}])
+    db._conn.rollback.assert_called_once()
+
+
+def test_mark_synced_rolls_back_on_error(db, cur):
+    cur.execute.side_effect = RuntimeError("boom")
+    with pytest.raises(RuntimeError):
+        db.mark_synced(DAY)
+    db._conn.rollback.assert_called_once()
