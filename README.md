@@ -111,8 +111,14 @@ Two options:
 **Option B — seed tokens from your local machine** (recommended if MFA is required):
 
 ```bash
-# Run once locally to generate tokens
-GARMINTOKENS=/tmp/garmin-tokens python -m src.main
+# Run once locally to generate tokens (login-only; main.py would also need Postgres)
+GARMINTOKENS=/tmp/garmin-tokens .venv/bin/python -c "
+import os
+from dotenv import load_dotenv
+load_dotenv()
+from src.garmin_client import GarminClient
+GarminClient(os.environ['GARMIN_EMAIL'], os.environ['GARMIN_PASSWORD'], os.environ['GARMINTOKENS'])
+"
 
 # Copy tokens into the PVC via a temporary pod
 kubectl run seed --image=busybox --restart=Never \
