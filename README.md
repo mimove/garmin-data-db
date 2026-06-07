@@ -1,6 +1,6 @@
 # garmin-data-db
 
-Pulls wellness and activity data from Garmin Connect and stores it in PostgreSQL. A CronJob runs nightly on a Raspberry Pi 4 MicroK8s cluster, chips away at a configurable backfill window (newest-first, resumable), and keeps today's metrics fresh on every run.
+Pulls wellness and activity data from Garmin Connect and stores it in PostgreSQL. A CronJob runs hourly on a Raspberry Pi 4 MicroK8s cluster, chips away at a configurable backfill window (newest-first, resumable), and keeps today's metrics fresh on every run.
 
 ```
 Garmin Connect  →  garminconnect (garth token auth)  →  normalizers  →  PostgreSQL
@@ -98,7 +98,7 @@ kubectl apply -f k8s/pvc.yaml
 kubectl apply -f k8s/cronjob.yaml
 ```
 
-The CronJob runs daily at 05:30 UTC (`schedule: "30 5 * * *"`), processes up to `MAX_DAYS_PER_RUN` days newest-first, and uses `concurrencyPolicy: Forbid` to prevent overlapping runs.
+The CronJob runs hourly (`schedule: "15 * * * *"`), processes up to `MAX_DAYS_PER_RUN` days newest-first, and uses `concurrencyPolicy: Forbid` to prevent overlapping runs. See [docs/deploy-pi.md](docs/deploy-pi.md) for the full Pi deployment guide (shared Postgres setup, token seeding, backfill, backups).
 
 ### 3. Initial Garmin token seed
 
