@@ -11,3 +11,4 @@ k3s-output/
 k8s/secret.local.yaml
 k8s/secret.yaml
 *.vscode**
+notebooks/
