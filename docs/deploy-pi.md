@@ -66,8 +66,19 @@ The first authentication may require MFA, which a headless CronJob cannot
 answer. Seed tokens from your laptop (recommended):
 
 ```bash
-# Run once locally to generate tokens (answers MFA interactively)
-GARMINTOKENS=/tmp/garmin-tokens python -m src.main
+# Run once locally to generate tokens (answers MFA interactively).
+# Login-only — main.py would also require a reachable Postgres.
+GARMINTOKENS=/tmp/garmin-tokens .venv/bin/python -c "
+import os
+from dotenv import load_dotenv
+load_dotenv()
+from src.garmin_client import GarminClient
+GarminClient(os.environ['GARMIN_EMAIL'], os.environ['GARMIN_PASSWORD'], os.environ['GARMINTOKENS'])
+print('tokens saved to', os.environ['GARMINTOKENS'])
+"
+
+# Copy the token directory to the Pi
+scp -r /tmp/garmin-tokens mimove@<pi-ip>:/tmp/garmin-tokens
 
 # Copy tokens into the PVC via a temporary pod
 microk8s kubectl run seed --image=busybox --restart=Never \
